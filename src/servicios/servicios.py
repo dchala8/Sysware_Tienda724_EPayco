@@ -79,12 +79,18 @@ class Client(Resource):
             if client_id == 'all':
                 #Uses Epayco platform to obtain all the associated clients
                 customers = objepayco.customer.getlist()  
+                
+                if customers["status"] == False:
+                    return {"resultado": "FALLO", "mensaje": "se presento un error al buscar el cliente", "error": customers["message"] + " | " + customers["data"]["description"]}, 500 
                               
                 #return a SUCCESS message and the list of clients
                 return {"resultado": "OK", "mensaje": "se obtuvo la lista de clientes exitosamente", "customers": customers}, 200
             else:
                 #Uses Epayco platform to obtain just one asociated client using the client_id field
                 customer=objepayco.customer.get(client_id)
+                
+                if customer["status"] == False:
+                    return {"resultado": "FALLO", "mensaje": "se presento un error al buscar el cliente", "error": customer["message"] + " | " + customer["data"]["description"]}, 500 
                 
                 #return a SUCCESS message and the newly created client
                 return {"resultado": "OK", "mensaje": "se obtuvo el cliente exitosamente", "cliente": customer}, 200
@@ -130,15 +136,19 @@ class CreditCard(Resource):
             #creates the info of the card token to delete
             delete_customer_info = {
                 "franchise": request.json["franchise"],
-                "mask": request.json["dictiomasknary"],
+                "mask": request.json["mask"],
                 "customer_id":client_id
             }
 
             #deletes the card info
             response = objepayco.customer.delete(delete_customer_info)
             
+            #validates if the card was deleted or if we got a internal server error
+            if response["status"] == False:
+                return {"resultado": "FALLO", "mensaje": "se presento un error al eliminar el token de tarjeta", "error": response["message"] + " | " + response["data"]["description"]}, 500  
+            
             #return a SUCCESS message and the delete process response
-            return {"resultado": "OK", "mensaje": "se elimino el token de tarjeta exitosamente exitosamente", "response": response}, 200
+            return {"resultado": "OK", "mensaje": "se elimino la tarjeta exitosamente exitosamente", "response": response}, 200
           
         except Exception as e:
             return {"resultado": "FALLO", "mensaje": "se presento un error al eliminar el token de tarjeta", "error": str(e)}, 500  
@@ -175,8 +185,7 @@ class CreditCard(Resource):
                 "card[cvc]": request.json["c_cv"]
             }
             token=objepayco.token.create(credit_info)
-            
-            print(token)
+
             
             #validates if token had a bad response and throws exception in that case
             if token["status"]==False:

@@ -67,7 +67,6 @@ class Client(Resource):
             return {"resultado": "OK", "mensaje": "cliente creado exitosamente", "cliente": customer}, 200
         
         except Exception as e:
-            print(str(e))
             return {"resultado": "FALLO", "mensaje": "se presento un error al crear el cliente", "error": str(e)}, 500
         
     #Get Method - if client_id is 'all' it returns the list of all the clients, if client_id is a number it returns the client with that client_id
@@ -80,6 +79,9 @@ class Client(Resource):
             if client_id == 'all':
                 #Uses Epayco platform to obtain all the associated clients
                 customers = objepayco.customer.getlist()  
+                
+                if customers["status"] == False:
+                    return {"resultado": "FALLO", "mensaje": "se presento un error al buscar el cliente", "error": customers["message"] + " | " + customers["data"]["description"]}, 500 
                               
                 #return a SUCCESS message and the list of clients
                 return {"resultado": "OK", "mensaje": "se obtuvo la lista de clientes exitosamente", "customers": customers}, 200
@@ -87,11 +89,13 @@ class Client(Resource):
                 #Uses Epayco platform to obtain just one asociated client using the client_id field
                 customer=objepayco.customer.get(client_id)
                 
+                if customer["status"] == False:
+                    return {"resultado": "FALLO", "mensaje": "se presento un error al buscar el cliente", "error": customer["message"] + " | " + customer["data"]["description"]}, 500 
+                
                 #return a SUCCESS message and the newly created client
                 return {"resultado": "OK", "mensaje": "se obtuvo el cliente exitosamente", "cliente": customer}, 200
             
         except Exception as e:
-            print(str(e))
             return {"resultado": "FALLO", "mensaje": "se presento un error al obtener los clientes", "error": str(e)}, 500
 
 
@@ -110,7 +114,6 @@ class Client(Resource):
             
             #Go trough the whole dictionary and updating the dictionary fields
             for key in dictionary:
-                print(key)
                 update_customer_info = {
                     key : dictionary[key]
                 }
@@ -120,7 +123,6 @@ class Client(Resource):
             return {"resultado": "OK", "mensaje": "se actualizo el cliente exitosamente", "cliente": customer}, 200
         
         except Exception as e:
-            print(str(e))
             return {"resultado": "FALLO", "mensaje": "se presento un error al actualizar el cliente", "error": str(e)}, 500        
     
     
@@ -134,18 +136,21 @@ class CreditCard(Resource):
             #creates the info of the card token to delete
             delete_customer_info = {
                 "franchise": request.json["franchise"],
-                "mask": request.json["dictiomasknary"],
+                "mask": request.json["mask"],
                 "customer_id":client_id
             }
 
             #deletes the card info
             response = objepayco.customer.delete(delete_customer_info)
             
+            #validates if the card was deleted or if we got a internal server error
+            if response["status"] == False:
+                return {"resultado": "FALLO", "mensaje": "se presento un error al eliminar el token de tarjeta", "error": response["message"] + " | " + response["data"]["description"]}, 500  
+            
             #return a SUCCESS message and the delete process response
-            return {"resultado": "OK", "mensaje": "se elimino el token de tarjeta exitosamente exitosamente", "response": response}, 200
+            return {"resultado": "OK", "mensaje": "se elimino la tarjeta exitosamente exitosamente", "response": response}, 200
           
         except Exception as e:
-            print(str(e))
             return {"resultado": "FALLO", "mensaje": "se presento un error al eliminar el token de tarjeta", "error": str(e)}, 500  
     #Post Method - Creates a new Client
     def post(self):
@@ -154,7 +159,6 @@ class CreditCard(Resource):
             objepayco=epayco.Epayco(options)
         
         except Exception as e:
-            print(str(e))
             return {"resultado": "FALLO", "mensaje": "se presento un error al crear el cliente", "error": str(e)}, 500
         
     #Get Method - if client_id is 'all' it returns the list of all the clients, if client_id is a number it returns the client with that client_id
@@ -164,7 +168,6 @@ class CreditCard(Resource):
             objepayco=epayco.Epayco(options)
                    
         except Exception as e:
-            print(str(e))
             return {"resultado": "FALLO", "mensaje": "se presento un error al obtener los clientes", "error": str(e)}, 500
 
 
@@ -182,21 +185,23 @@ class CreditCard(Resource):
                 "card[cvc]": request.json["c_cv"]
             }
             token=objepayco.token.create(credit_info)
+
             
-            print(token)
-            
+            #validates if token had a bad response and throws exception in that case
             if token["status"]==False:
                 return {"resultado": "FALLO", "mensaje": "La tarjeta de credito no existe", "error": token["message"]}, 500
             
+            #prepares the customaer info for the new card
             customer_info = {
                 "customer_id":client_id,
                 "token": token["id"],
                 "franchise":token["card"]["name"],
                 "mask":token["card"]["mask"]
             }
+            #asociates the new card to the customer as its new default card
             customer=objepayco.customer.addDefaultCard(customer_info)
-            print(customer)
             
+            #validates if the asociation was made correctly and throws a exception if not
             if customer["status"] == False:
                 return {"resultado": "FALLO", "mensaje": "se presento un error al actualizar el token de tarjeta de credito", "error": customer["message"]}, 500
             
@@ -204,28 +209,98 @@ class CreditCard(Resource):
             #return a SUCCESS message and the delete process response
             return {"resultado": "OK", "mensaje": "se actualizo el token de tarjeta exitosamente exitosamente", "response": customer}, 200
         except Exception as e:
-            print(str(e))
             return {"resultado": "FALLO", "mensaje": "se presento un error al obtener los clientes", "error": str(e)}, 500      
 
 
 
 class Bank(Resource):    
     #Get Method - Returns a the list of avaiable PSE banks
+    # def get(self):
+    #     try:
+    #         #Create API connection with EPAYCO
+    #         objepayco=epayco.Epayco(options)
+            
+    #         #obtain the bank list
+    #         bankList = objepayco.bank.pseBank()
+                  
+    #         #return a SUCCESS message and the bank list
+    #         return {"resultado": "OK", "mensaje": "Se obtuvo el listado de bancos adecuadamente", "bancos": bankList}, 200
+        
+    #     except Exception as e:
+    #         return {"resultado": "FALLO", "mensaje": "se presento un error al obtener los bancos", "error": str(e)}, 500
+    
     def get(self):
         try:
             #Create API connection with EPAYCO
             objepayco=epayco.Epayco(options)
             
             #obtain the bank list
-            bankList = objepayco.bank.pseBank()
-            
-            print(bankList)
+            bankList = {
+                "success": True,
+                "title_response": "Ok",
+                "text_response": "Bancos consultados exitosamente PseController",
+                "last_action": "Query Bancos",
+                "data": [
+                    {
+                        "bankCode": "10400",
+                        "bankName": "Banco Agrario"
+                    },
+                    {
+                        "bankCode": "1052",
+                        "bankName": "Banco AV Villas"
+                    },
+                    {
+                        "bankCode": "1013",
+                        "bankName": "BANCO BBVA COLOMBIA S.A."
+                    },
+                    {
+                        "bankCode": "1032",
+                        "bankName": "BANCO CAJA SOCIAL"
+                    },
+                    {
+                        "bankCode": "1051",
+                        "bankName": "BANCO DAVIVIENDA"
+                    },
+                    {
+                        "bankCode": "1001",
+                        "bankName": "BANCO DE BOGOTA"
+                    },
+                    {
+                        "bankCode": "1023",
+                        "bankName": "BANCO DE OCCIDENTE"
+                    },
+                    {
+                        "bankCode": "1012",
+                        "bankName": "BANCO GNB SUDAMERIS"
+                    },
+                    {
+                        "bankCode": "1006",
+                        "bankName": "BANCO ITAU"
+                    },
+                    {
+                        "bankCode": "1002",
+                        "bankName": "BANCO POPULAR"
+                    },
+                    {
+                        "bankCode": "1007",
+                        "bankName": "BANCOLOMBIA"
+                    },
+                    {
+                        "bankCode": "1009",
+                        "bankName": "CITIBANK"
+                    },
+                    {
+                        "bankCode": "1019",
+                        "bankName": "SCOTIABANK COLPATRIA"
+                    }
+                ],
+                "enpruebas": False
+            }
                   
             #return a SUCCESS message and the bank list
             return {"resultado": "OK", "mensaje": "Se obtuvo el listado de bancos adecuadamente", "bancos": bankList}, 200
         
         except Exception as e:
-            print(str(e))
             return {"resultado": "FALLO", "mensaje": "se presento un error al obtener los bancos", "error": str(e)}, 500
         
     
@@ -239,14 +314,11 @@ class PsePayment(Resource):
             
             #Obtain the PSE transaction
             pse = objepayco.bank.pseTransaction(pse_id)
-            
-            print(pse)
                   
             #return a SUCCESS message and the transaction
             return {"resultado": "OK", "mensaje": "Su transaccion es", "Transaccion": pse}, 200
         
         except Exception as e:
-            print(str(e))
             return {"resultado": "FALLO", "mensaje": "se presento un error al obtener la transaccion", "error": str(e)}, 500
         
     #Post Method - Creates a new PSE Payment
@@ -287,8 +359,6 @@ class PsePayment(Resource):
             }
             
             pse = objepayco.bank.create(pse_info)  
-            
-            print(pse)
                   
             if pse["success"] == False:
                 return {"resultado": "FALLO", "mensaje": "se presento un error al procesar el pago", "error": pse["title_response"] + " | " + pse["text_response"] + " | " + pse["data"]["errores"][0]["codError"] + " | " + pse["data"]["errores"][0]["errorMessage"]}, 500
@@ -296,7 +366,6 @@ class PsePayment(Resource):
             return {"resultado": "OK", "mensaje": "Se proceso el pago exitosamente", "cliente": pse}, 200
         
         except Exception as e:
-            print(str(e))
             return {"resultado": "FALLO", "mensaje": "se presento un error al procesar el pago", "error": str(e)}, 500
         
         
@@ -340,12 +409,9 @@ class Payment(Resource):
             }
             
             pay = objepayco.charge.create(payment_info)   
-            print(pay) 
             
-                 
             #return a SUCCESS message and the payment
             return {"resultado": "OK", "mensaje": "Se proceso el pago exitosamente", "cliente": pay}, 200
         
         except Exception as e:
-            print(str(e))
             return {"resultado": "FALLO", "mensaje": "se presento un error al procesar el pago", "error": str(e)}, 500

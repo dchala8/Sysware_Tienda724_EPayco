@@ -32,6 +32,9 @@ class Health(Resource):
     
     
     
+    
+    
+    
 class Client(Resource):    
     #Post Method - Creates a new Client
     def post(self):

@@ -29,11 +29,7 @@ options={"apiKey":apiKey,
 class Health(Resource):    
     def get(self):
         return {"resultado": "OK", "mensaje": "service is alive"}, 200
-    
-    
-    
-    
-    
+
     
 class Client(Resource):    
     #Post Method - Creates a new Client

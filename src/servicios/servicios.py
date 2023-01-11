@@ -6,6 +6,7 @@ import json
 import epaycosdk.epayco as epayco
 from flask import request, jsonify, send_file
 from datetime import datetime
+from flask_cors import CORS, cross_origin
 from flask_restful import Resource
 #from src.modelos.modelos import User, db, Task
 from werkzeug.utils import secure_filename
@@ -27,12 +28,14 @@ options={"apiKey":apiKey,
 
 #APP STARTS HERE       
 class Health(Resource):    
+    @cross_origin()
     def get(self):
         return {"resultado": "OK", "mensaje": "service is alive"}, 200
 
     
 class Client(Resource):    
     #Post Method - Creates a new Client
+    @cross_origin()
     def post(self):
         try:
             #Create API connection with EPAYCO
@@ -69,6 +72,7 @@ class Client(Resource):
             return {"resultado": "FALLO", "mensaje": "se presento un error al crear el cliente", "error": str(e)}, 500
         
     #Get Method - if client_id is 'all' it returns the list of all the clients, if client_id is a number it returns the client with that client_id
+    @cross_origin()
     def get(self,client_id):
         try:
             #Create API connection with EPAYCO
@@ -99,6 +103,7 @@ class Client(Resource):
 
 
     #Put Method - receives a client_id and the name of the field to update in the url and a value for said field on the json body
+    @cross_origin()
     def put(self,client_id):
         try:
             #Create API connection with EPAYCO
@@ -127,6 +132,7 @@ class Client(Resource):
     
 class CreditCard(Resource):    
     #Delete Method - receives a client_id and the data of the card to delete in the json body
+    @cross_origin()
     def delete(self,client_id):
         try:
             #Create API connection with EPAYCO
@@ -152,6 +158,7 @@ class CreditCard(Resource):
         except Exception as e:
             return {"resultado": "FALLO", "mensaje": "se presento un error al eliminar el token de tarjeta", "error": str(e)}, 500  
     #Post Method - Creates a new Client
+    @cross_origin()
     def post(self):
         try:
             #Create API connection with EPAYCO
@@ -161,6 +168,7 @@ class CreditCard(Resource):
             return {"resultado": "FALLO", "mensaje": "se presento un error al crear el cliente", "error": str(e)}, 500
         
     #Get Method - if client_id is 'all' it returns the list of all the clients, if client_id is a number it returns the client with that client_id
+    @cross_origin()
     def get(self,client_id):
         try:
             #Create API connection with EPAYCO
@@ -171,6 +179,7 @@ class CreditCard(Resource):
 
 
     #Put Method - receives a client_id and the name of the field to update in the url and a value for said field on the json body
+    @cross_origin()
     def put(self,client_id):
         try:
             #Create API connection with EPAYCO
@@ -227,7 +236,7 @@ class Bank(Resource):
         
     #     except Exception as e:
     #         return {"resultado": "FALLO", "mensaje": "se presento un error al obtener los bancos", "error": str(e)}, 500
-    
+    @cross_origin()
     def get(self):
         try:
             #Create API connection with EPAYCO
@@ -306,6 +315,7 @@ class Bank(Resource):
         
 class PsePayment(Resource):    
     #Get Method - Obtains the transaccion created and its status with pse_id
+    @cross_origin()
     def get(self,pse_id):
         try:
             #Create API connection with EPAYCO
@@ -321,6 +331,7 @@ class PsePayment(Resource):
             return {"resultado": "FALLO", "mensaje": "se presento un error al obtener la transaccion", "error": str(e)}, 500
         
     #Post Method - Creates a new PSE Payment
+    @cross_origin()
     def post(self):
         try:
             #Create API connection with EPAYCO
@@ -371,6 +382,7 @@ class PsePayment(Resource):
         
 class Payment(Resource):    
     #Post Method - Creates a new default (credit card) Payment
+    @cross_origin()
     def post(self):
         try:
             #Create API connection with EPAYCO

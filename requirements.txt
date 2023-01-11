@@ -17,3 +17,4 @@ psycopg2-binary
 requests
 pathlib==1.0.1
 epaycosdk-win
+flask-cors

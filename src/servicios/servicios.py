@@ -16,8 +16,8 @@ from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identi
 #from src.publisher import publish_task_queue
 from sqlalchemy.sql import text
 
-apiKey = ""
-privateKey = ""
+apiKey = "718dde0ecf0927abf30647f521a710c4"
+privateKey = "db9f7a26a0e6da5a1769fe02354e5068"
 lenguage = "ES"
 test = False
 options={"apiKey":apiKey,
